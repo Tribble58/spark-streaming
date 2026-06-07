@@ -16,7 +16,6 @@ if __name__ == '__main__':
             .readStream \
             .format("kafka") \
             .option("kafka.bootstrap.servers", "kafka:9092") \
-            .option("maxOffsetsPerTrigger", 10) \
             .option("subscribe", "stream-input") \
             .load()
 
