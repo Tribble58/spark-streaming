@@ -10,7 +10,7 @@ from time import sleep
 
 from kafka import KafkaProducer
 
-TIMEOUT = .01
+TIMEOUT = .1
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 if __name__ == '__main__':
 
     try:
-        producer = KafkaProducer(bootstrap_servers='localhost:29092', value_serializer=lambda v: dumps(v).encode('utf-8'))
+        producer = KafkaProducer(bootstrap_servers='kafka:9092', value_serializer=lambda v: dumps(v).encode('utf-8'))
         while True:
             message = {
                 "event_id": str(uuid1()),
@@ -29,9 +29,9 @@ if __name__ == '__main__':
             }
 
             producer.send("stream-input", message)
-            print("Message sent!")
+            logger.info("Message sent!")
 
             sleep(TIMEOUT)
 
-    except KeyboardInterrupt, KafkaTimeoutError:
+    except (KeyboardInterrupt, KafkaTimeoutError):
         print("Shutting down producer...")
