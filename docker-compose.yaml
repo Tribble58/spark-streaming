@@ -46,7 +46,8 @@ services:
       - "4040:4040"
     volumes:
       - ./kafka_consumer_spark:/kafka_consumer_spark
-#      - ./data/spark_output/parquet:/data/spark_output
+      - ./data/static:/data/static
+    #      - ./data/spark_output/parquet:/data/spark_output
     command: /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0 /kafka_consumer_spark/main.py
 
   producer:

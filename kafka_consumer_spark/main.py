@@ -6,6 +6,8 @@ from pyspark.sql.functions import from_json, col, to_json, struct, to_date, sum,
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+users_dir = "/data/static"
+
 output_dir = "/data/spark_output"
 
 if __name__ == '__main__':
@@ -17,6 +19,12 @@ if __name__ == '__main__':
 
         spark.sparkContext.setLogLevel("ERROR")
         spark.conf.set("spark.sql.streaming.checkpointLocation", "/tmp/checkpoints")
+
+        users_schema = "user_id int, name string, last_name string, city string, phone string"
+
+        df_users = spark.read.format("csv").option("header", True).schema(users_schema).load(users_dir)
+
+        df_users.cache()
 
         df = spark \
             .readStream \
@@ -45,7 +53,7 @@ if __name__ == '__main__':
                          .trigger(processingTime="5 seconds")
                          # Output result to parquet
                          .format("parquet")
-                         .option("path", output_dir)
+                         .option("path", output_dir + "/parquet")
                          .partitionBy("processing_date")
                          .outputMode("append")
                          .start()
@@ -73,7 +81,7 @@ if __name__ == '__main__':
                                )
                        .writeStream
                        .trigger(processingTime="5 seconds")
-                       # Output result to console
+                       # Output result to kafka
                        .format("kafka")
                        .option("kafka.bootstrap.servers", "kafka:9092")
                        .option("topic", "stream-output")
@@ -111,7 +119,7 @@ if __name__ == '__main__':
         #                  .start()
         #                  )
 
-        query_console_watermark = (
+        query_parquet_watermark = (
             df
             .select(from_json(col("value").cast("string"),
                               kafka_message_schema)
@@ -124,18 +132,44 @@ if __name__ == '__main__':
                     col("json_data.event_time").alias("event_ts"), "offset",
                     to_date(col("processing_ts")).alias("processing_date"))
             .filter(col("action") == "click")
-            .select("user_id", "action", "value", "event_ts")
+            .select("user_id", "action", "value", "event_ts", to_date(col("event_ts")).alias("event_dt"))
             .withWatermark("event_ts", "10 seconds")
             .groupBy(window("event_ts", "10 seconds", "5 seconds"))
             .agg(
                 count("user_id").alias("count_in_window"),
                 sum("value").alias("sum_in_window")
             )
+            # .withColumn("event_dt", to_date(col("window.start")))
+            .writeStream
+            # Output result to parquet
+            .format("parquet")
+            .option("path", output_dir + "/parquet_watermark")
+            # .partitionBy("event_dt")
+            .outputMode("append")
+            .start()
+        )
+
+        query_console = (
+            df
+            .select(from_json(col("value").cast("string"),
+                              kafka_message_schema)
+                    # required alias for further selecting
+                    .alias("json_data"),
+                    "offset",
+                    col("timestamp").alias("processing_ts"),
+                    )
+            .select("json_data.event_id", "json_data.user_id", "json_data.action", "json_data.value",
+                    col("json_data.event_time").alias("event_ts"), "offset", "processing_ts",
+                    to_date(col("processing_ts")).alias("processing_date"))
+            .join(df_users, how="left", on="user_id")
+            .select("event_id", "user_id", "name", "last_name", "city", "phone", "action", "value", "event_ts",
+                    "processing_ts")
             .writeStream
             # Output result to console
             .format("console")
             .outputMode("append")
             .option("truncate", False)
+            .trigger(processingTime="5 seconds")
             .start()
         )
 
