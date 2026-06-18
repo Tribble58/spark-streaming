@@ -50,9 +50,27 @@ services:
     #      - ./data/spark_output/parquet:/data/spark_output
     command: /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0 /kafka_consumer_spark/main.py
 
-  producer:
-    build: ./kafka_producer
-    container_name: producer
+
+  kafka_producer:
+    build: kafka_producers
+    container_name: kafka_producer
+    command: python -u clicks_producer/main.py
     depends_on:
       - kafka
     restart: unless-stopped
+
+  kafka_purchases_producer:
+    build: kafka_producers
+    container_name: kafka_purchases_producer
+    command: python -u purchases_producer/main.py
+    depends_on:
+      - kafka
+    restart: unless-stopped
+
+
+#  producers:
+#    build: kafka_producers
+#    container_name: producers
+#    depends_on:
+#      - kafka
+#    restart: unless-stopped

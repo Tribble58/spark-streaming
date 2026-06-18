@@ -24,7 +24,7 @@ if __name__ == '__main__':
                 "event_id": str(uuid1()),
                 "event_time": now(tz="UTC").to_iso8601_string(),
                 "user_id": randint(10, 100),
-                "action": ["click", "view", "purchase"][randint(0, 2)],
+                "action": ["click", "view"][randint(0, 1)],
                 "value": randint(1, 1000)
             }
 
