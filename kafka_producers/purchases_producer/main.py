@@ -11,6 +11,8 @@ from time import sleep
 from kafka import KafkaProducer
 
 TIMEOUT = 2.5
+KAFKA_BROKER = "kafka:9092"
+KAFKA_TOPIC_NAME = "stream-purchases"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 if __name__ == '__main__':
 
     try:
-        producer = KafkaProducer(bootstrap_servers='kafka:9092', value_serializer=lambda v: dumps(v).encode('utf-8'))
+        producer = KafkaProducer(bootstrap_servers=KAFKA_BROKER, value_serializer=lambda v: dumps(v).encode('utf-8'))
         while True:
             message = {
                 "event_id": str(uuid1()),
@@ -28,7 +30,11 @@ if __name__ == '__main__':
                 "value": randint(1, 1000)
             }
 
-            producer.send("stream-purchases", message)
+            # Send message with timeout once in 10 times with 10 seconds delay
+            if randint(35, 45) == 42:
+                sleep(10)
+
+            producer.send(KAFKA_TOPIC_NAME, message)
             logger.info("Purchase message sent!")
 
             sleep(TIMEOUT)
