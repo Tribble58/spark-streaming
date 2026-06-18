@@ -18,7 +18,6 @@ if __name__ == '__main__':
                  .getOrCreate())
 
         spark.sparkContext.setLogLevel("ERROR")
-        spark.conf.set("spark.sql.streaming.checkpointLocation", "/tmp/checkpoints")
 
         users_schema = "user_id int, name string, last_name string, city string, phone string"
 
@@ -190,7 +189,7 @@ if __name__ == '__main__':
             # Output result to console
             .format("console")
             .outputMode("append")
-            .option("checkpointLocation", data_dir + "/stream_stream_join")
+            .option("checkpointLocation", checkpoint_dir + "/stream_stream_join")
             .option("truncate", False)
             .start()
         )
