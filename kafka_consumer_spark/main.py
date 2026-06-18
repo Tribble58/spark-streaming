@@ -183,6 +183,8 @@ if __name__ == '__main__':
             )
             .select("user_id", "purchase_event_ts", "purchase_value", col("event_ts").alias("click_event_ts"),
                     "processing_ts", "processing_date")
+            # No watermark needed as there is already watermark after the join
+            .dropDuplicates(["user_id", "purchase_event_ts", "purchase_value"])
             .writeStream
             .trigger(processingTime="5 seconds")
             # Output result to console
