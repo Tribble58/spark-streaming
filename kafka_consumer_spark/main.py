@@ -185,12 +185,15 @@ if __name__ == '__main__':
             # No watermark needed as there is already watermark after the join
             .dropDuplicates(["user_id", "purchase_event_ts", "purchase_value"])
             .writeStream
+            .queryName("stream-stream join")
             .trigger(processingTime="5 seconds")
             # Output result to console
             .format("console")
             .outputMode("append")
             .option("checkpointLocation", checkpoint_dir + "/stream_stream_join")
             .option("truncate", False)
+            .option("numRows", 1000)
+            .option("maxOffsetPerTrigger", 100)
             .start()
         )
 
