@@ -10,7 +10,7 @@ from time import sleep
 
 from kafka import KafkaProducer
 
-TIMEOUT = .1
+TIMEOUT = 1
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
