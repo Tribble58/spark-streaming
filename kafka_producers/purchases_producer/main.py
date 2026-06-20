@@ -32,6 +32,7 @@ if __name__ == '__main__':
 
             # Send message with timeout once in 10 times with 10 seconds delay
             if randint(35, 45) == 42:
+                logger.info("Purchase delay")
                 sleep(10)
 
             producer.send(KAFKA_TOPIC_NAME, message)
