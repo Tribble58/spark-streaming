@@ -203,8 +203,8 @@ if __name__ == '__main__':
             df_purchases_watermark
             .groupBy("processing_date", window("purchase_ts", "10 seconds", "5 seconds"))
             .agg(
-                count("purchase_ts").alias("clicks_cnt"),
-                sum("value").alias("purchase_sum")
+                count("purchase_ts").alias("purchases_cnt"),
+                sum("value").alias("purchases_sum")
             )
             .writeStream
             .format("parquet")
