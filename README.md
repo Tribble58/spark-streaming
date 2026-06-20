@@ -1,68 +1,46 @@
 # Spark Streaming repository
-The folowing project is dedicated to learning Spark Structured Streaming and consists of several stages:
 
-## Этап 1: Подготовка окружения и генерация потока через Kafka
-- Запуск Kafka + ZooKeeper в Docker (например, с помощью `docker-compose.yml`)
-- Создание топика `input-stream`
-- Написание Python-продюсера, который отправляет в Kafka сообщения (строки, JSON) с заданной периодичностью (например, 1 сообщение в секунду)
-- Продюсер должен эмулировать реальные данные: текст, числовые значения, временные метки (event-time)
+## Description
 
-## Этап 2: Чтение потока из Kafka в Spark Structured Streaming
-- Создание SparkSession с необходимыми Kafka-зависимостями (spark-sql-kafka-0-10)
-- `readStream.format("kafka")` – чтение из топика
-- Десериализация `value` из байтов в строку
-- Просмотр схемы данных, использование `outputMode("append")` + `format("console")` для отладки
+The following project is dedicated to learning **_Spark Structured Streaming_**, especially:
 
-## Этап 3: Базовые трансформации потока
-- Фильтрация, выбор колонок, преобразование типов
-- Парсинг JSON (если продюсер шлёт JSON)
-- Добавление processing-time колонки (`current_timestamp()`)
-- Разбор составных полей (`split`, `get_json_object`, `from_json`)
+- reading static files, streams of different formats (Kafka, parquet, socket, etc.) with various schemas
+- defining those schemas in different ways (SQL, DSL)
+- performing stateless transformations (select, filter, map)
+- implementing stateful transformations (grouping, joining, aggregating)
+- working with watermarks, time range joins for stream-stream connection
+- writing streams to parquet, Kafka, console
+- partitioning data for data speed access increase
+- error handling, checkpoint locations managing
 
-## Этап 4: Запись потока в различные системы
-- Вывод в консоль (`format("console")`)
-- Вывод в файлы (Parquet, Delta) с партиционированием
-- Вывод обратно в Kafka (другой топик)
-- Использование `outputMode("append")`, `"update"`, `"complete"` на простых примерах
+All services are packed and delivered as **Docker containers bundle**, follow the instructions below to run it on
+your machine.
 
-## Этап 5: Агрегации без окон (stateful)
-- Группировка по ключу (например, подсчёт сообщений по категориям)
-- Режим `outputMode("complete")` или `"update"`
-- Рассмотрение проблемы роста состояния и роли checkpoint
+## Step-by-step algorithm
 
-## Этап 6: Оконные агрегации и водяной знак (watermark)
-- Использование event-time из данных (поле timestamp от продюсера)
-- Определение скользящих окон: `window("event_time", "10 seconds")`
-- Добавление `withWatermark("event_time", "10 seconds")` для ограничения состояния
-- Обработка опаздывающих данных и вывод в `append`-режиме
+1. **reads csv** users static data from /data/static/csv directory on your machine with specific schema defined in
+   _users_schema_
+2. **reads** clicks and purchases **streams** that are produced by Python applications that generate messages and send
+   them to Kafka topics (**_stream-clicks_** and _**stream-purchases**_). Some clicks are sent with delay, some purchases are
+   sent duplicated;
+3. **deserializes** Kafka messages to DataFrame columns, adds processing timestamp column;
+4. **joins** clicks stream with static users data and write it to _**/data/output/parquet/clicks_enriched**_;
+5. **adds watermark** on both streams;
+6. **performs stream-stream join** based on watermarks and time range (purchase time between click time and click time + 1
+   minute) and **outputs results to Kafka** attributed-purchases topic and console;
+7. **calculates** count of purchases and total amount of purchase during 10 seconds window with 5 seconds slide and **writes
+   result to parquet** _**/data/output/parquet/aggregated_purchases**_;
+8. **removes duplicates** in clicks stream and **writes results in parquet** to  _**/data/output/parquet/deduplicated_clicks**_;
 
-## Этап 7: Join потока со статическими данными
-- Загрузка статического DataFrame (например, файл с маппингом ID → имя)
-- Выполнение `stream.join(static, on="id", how="left")`
-- Обогащение потока без shuffle
+## Instruction
 
-## Этап 8: Join двух потоков (stream-stream join)
-- Создание второго продюсера, отправляющего другой тип событий (например, заказы и оплаты)
-- Объединение по общему ключу и временному окну (с обязательным watermark)
-- Использование `join` с watermark и указанием временного допуска
+1. First things first, make sure you have Docker installed on your machine. If not, follow
+   the [Docker installation guide](https://docs.docker.com/engine/install/);
+2. Pull current repository to the desired directory on your machine;
+3. Run docker compose file:
 
-## Этап 9: Дедупликация и обработка только новых записей
-- `dropDuplicates("unique_id")` с watermark для очистки состояния
-- Эффективная дедупликация в потоке с гарантией "exactly once"
+```docker
+docker compose up
+```
 
-## Этап 10: Checkpoint и отказоустойчивость
-- Настройка `checkpointLocation` в `writeStream`
-- Имитация сбоя (перезапуск приложения с тем же checkpoint)
-- Восстановление состояний (окон, агрегаций) без потери данных
-
-## Этап 11: Управление триггерами и производительностью
-- `Trigger.ProcessingTime("5 seconds")` – управление частотой микро-батчей
-- `maxOffsetsPerTrigger` – ограничение размера батча
-- Настройка `spark.sql.shuffle.partitions` для оконных операций
-- Использование непрерывной обработки (Continuous Processing) – экспериментально
-
-## Этап 12: Финальный проект – пайплайн с продюсером, стримом и стоком
-- Написание продюсера, генерирующего события в Kafka (например, клики пользователей с гео-метками)
-- Структурированный стриминг: фильтрация, окна, обогащение статическими справочниками
-- Запись агрегированных результатов в Delta Lake или другой топик Kafka
-- Развертывание в Docker‑композе: Spark-приложение + Kafka + продюсер
+4. Enjoy! :)
