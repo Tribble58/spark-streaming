@@ -219,3 +219,4 @@ __marimo__/
 
 # Unused scripts (tutorials, sandboxes)
 kafka_consumer_spark_tutorial/
+*tutorial*
