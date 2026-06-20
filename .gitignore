@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Unused scripts (tutorials, sandboxes)
+kafka_consumer_spark_tutorial/
