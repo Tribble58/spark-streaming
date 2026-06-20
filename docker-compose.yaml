@@ -45,15 +45,13 @@ services:
     ports:
       - "4040:4040"
     volumes:
-      - ./kafka_consumer_spark:/kafka_consumer_spark
-      - ./data/static:/data/static
-    #      - ./data/spark_output/parquet:/data/spark_output
-    command: /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0 /kafka_consumer_spark/main.py
+      - ./spark:/app
+      - ./data/static/csv:/data/static/csv
+    command: /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0 /app/main.py
 
-
-  kafka_producer:
+  kafka_clicks_producer:
     build: kafka_producers
-    container_name: kafka_producer
+    container_name: kafka_clicks_producer
     command: python -u clicks_producer/main.py
     depends_on:
       - kafka
@@ -66,11 +64,3 @@ services:
     depends_on:
       - kafka
     restart: unless-stopped
-
-
-#  producers:
-#    build: kafka_producers
-#    container_name: producers
-#    depends_on:
-#      - kafka
-#    restart: unless-stopped
